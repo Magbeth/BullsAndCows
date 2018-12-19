@@ -14,8 +14,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 
+import java.util.Map;
 import java.util.Set;
 
 
@@ -24,16 +26,17 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(EventHandler.class);
 
     private static Set<WebSocketSession> chatEndpoints = new HashSet<>();
-    private WebSocketSession session;
+    private Map<WebSocketSession, String> sessions= new HashMap();
 
-    private App app = new App();
+    @Autowired
+    private App app;
+
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         super.afterConnectionEstablished(session);
-        this.session = session;
-        System.out.println("Socket Connected: " + this.session);
-        chatEndpoints.add(this.session);
+        System.out.println("Socket Connected: " + session);
+        chatEndpoints.add(session);
     }
 
     @Override
@@ -42,55 +45,60 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
         String topic = JsonHelper.getJsonNode(payload).get("topic").textValue().toLowerCase();
         switch (topic) {
             case "start":
-                broadcast(start());
+                broadcast(start(session), session);
                 break;
             case "answer":
-                broadcast(answer(payload));
-                gameOverCheck(payload);
+                broadcast(answer(payload, session), session);
+                gameOverCheck(payload, session);
                 break;
             default:
-                broadcast(new TextMessage("Unknown topic!"));
+                broadcast(new TextMessage("Unknown topic!"), session);
                 break;
         }
         log.info("Received " + payload);
     }
 
-    private TextMessage start() {
+    private TextMessage start(WebSocketSession session) {
+        app.setSecretWord();
+        sessions.put(session, app.getSecretWord());
         return new TextMessage(app.getNewGame());
     }
 
-    private TextMessage answer(String payload) {
+    private TextMessage answer(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
-        TextMessage msg = new TextMessage("Попытка № "+(11 - app.getAttemtsNumber()) + "\n " + "Ваш ответ: " + ans + "\n " + app.attempt(ans));
+        String quiz = sessions.get(session);
+        TextMessage msg = new TextMessage("Попытка № "+(11 - app.getAttemtsNumber()) + "\n " + "Ваш ответ: " + ans + "\n " + app.attempt(quiz, ans) + "From "+ session);
         return msg;
 
     }
-    private void gameOverCheck(String payload) {
+    private void gameOverCheck(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
-        if ((11 - app.getAttemtsNumber()) > 10 || app.checkForWin(ans)) {
+        String quiz = sessions.get(session);
+        if ((11 - app.getAttemtsNumber()) > 10 || app.checkForWin(quiz, ans)) {
             try {
-                this.session.close();
+                session.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-    private static void broadcast(TextMessage message) {
-        chatEndpoints.forEach(endpoint -> {
-            synchronized (endpoint) {
+    private void broadcast(TextMessage message, WebSocketSession session) {
+
+//            synchronized (this.session) {
                 try {
-                    endpoint.sendMessage(message);
+                    session.sendMessage(message);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-        });
+//            }
+
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         log.error("Socket Closed: [" + closeStatus.getCode() + "] " + closeStatus.getReason());
         super.afterConnectionClosed(session, closeStatus);
+        sessions.remove(session, sessions.get(session));
         chatEndpoints.remove(session);
     }
 }

@@ -1,10 +1,13 @@
 package com.magbeth;
 
+import org.springframework.stereotype.Component;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+@Component
 public class App{
     private static List<String> words;
     private static final Random rand = new Random();
@@ -37,7 +40,7 @@ public class App{
         return rand.nextInt((max - min) + 1) + min;
     }
 
-    private void setSecretWord() {
+    void setSecretWord() {
 
         int index = randInt(0, words.size() - 1);
         secretWord = words.get(index);
@@ -47,39 +50,36 @@ public class App{
         return secretWord.length();
     }
 
-    private String getSecretWord() {
+    String getSecretWord() {
         return secretWord;
     }
 
     String getNewGame() {
         attemtsNumber = 10;
-        setSecretWord();
-        int wordLength = getSecretWordLength();
-        String word = getSecretWord();
-        System.err.println(word);
-        return "Я загадал слово из " + wordLength + " букв.";
+        System.err.println(getSecretWord());
+        return "Я загадал слово из " + getSecretWordLength() + " букв.";
     }
 
-     String attempt(String answer) {
+     String attempt(String quizz, String answer) {
         String attemptResult = "";
         int bulls = 0;
         int cows = 0;
-        if (attemtsNumber == 1 && !answer.equals(secretWord)) {
+        if (attemtsNumber == 1 && !answer.equals(quizz)) {
             attemptResult += "Вы проиграли.";
             attemtsNumber--;
         }
-        else if (answer.length() != secretWord.length()) {
+        else if (answer.length() != quizz.length()) {
             attemptResult += "Неправильная длина!";
             attemtsNumber--;
         }
-        else if (answer.equals(secretWord)) attemptResult += "Угадали!";
+        else if (answer.equals(quizz)) attemptResult += "Угадали!";
         else {
             for(int i = 0; i < answer.length(); i++) {
 
                 char chA = answer.charAt(i);
-                char chB = secretWord.charAt(i);
+                char chB = quizz.charAt(i);
                 if (chA == chB) bulls++;
-                if (secretWord.indexOf(chA) != -1) cows++;
+                if (quizz.indexOf(chA) != -1) cows++;
             }
             attemptResult = "Неверно. Попробуй еще \n" + "Быков: " + bulls + " Коров: "+ cows;
             attemtsNumber--;
@@ -87,8 +87,8 @@ public class App{
         return attemptResult;
     }
 
-    boolean checkForWin(String ans) {
-        return ans.equals(secretWord);
+    boolean checkForWin(String quizz, String ans) {
+        return ans.equals(quizz);
     }
 
 }
