@@ -26,10 +26,7 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(EventHandler.class);
 
     private static Set<WebSocketSession> chatEndpoints = new HashSet<>();
-    private Map<WebSocketSession, String> sessions= new HashMap();
-
-    @Autowired
-    private App app;
+    private Map<WebSocketSession, App> sessions= new HashMap();
 
 
     @Override
@@ -59,22 +56,24 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
     }
 
     private TextMessage start(WebSocketSession session) {
-        app.setSecretWord();
-        sessions.put(session, app.getSecretWord());
-        return new TextMessage(app.getNewGame());
+        App app = new App();
+        sessions.put(session, app);
+//        System.err.println("saved " + app.getSecretWord()+" for " + session);
+        return new TextMessage("Я загадал слово из " + app.getSecretWordLength() + " букв");
     }
 
     private TextMessage answer(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
-        String quiz = sessions.get(session);
-        TextMessage msg = new TextMessage("Попытка № "+(11 - app.getAttemtsNumber()) + "\n " + "Ваш ответ: " + ans + "\n " + app.attempt(quiz, ans) + "From "+ session);
+        String quiz = sessions.get(session).getSecretWord();
+        System.err.println("get " + sessions.get(session).getSecretWord()+" for " + session);
+        TextMessage msg = new TextMessage("Попытка № "+(11 - sessions.get(session).getAttemtsNumber()) + "\n " + "Ваш ответ: " + ans + "\n " + sessions.get(session).attempt(quiz, ans) + "From "+ session);
         return msg;
 
     }
     private void gameOverCheck(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
-        String quiz = sessions.get(session);
-        if ((11 - app.getAttemtsNumber()) > 10 || app.checkForWin(quiz, ans)) {
+        String quiz = sessions.get(session).getSecretWord();
+        if ((11 - sessions.get(session).getAttemtsNumber()) > 10 || sessions.get(session).checkForWin(quiz, ans)) {
             try {
                 session.close();
             } catch (IOException e) {

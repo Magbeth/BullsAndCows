@@ -1,17 +1,15 @@
 package com.magbeth;
 
-import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-@Component
 public class App{
     private static List<String> words;
     private static final Random rand = new Random();
-    private static String secretWord;
+    private String secretWord;
     private int attemtsNumber;
 
     static {
@@ -21,6 +19,13 @@ public class App{
             e.printStackTrace();
         }
     }
+
+    public App() {
+        setSecretWord();
+        attemtsNumber = 10;
+        System.err.println(getSecretWord());
+    }
+
     public int getAttemtsNumber() {
         return attemtsNumber;
     }
@@ -40,25 +45,21 @@ public class App{
         return rand.nextInt((max - min) + 1) + min;
     }
 
-    void setSecretWord() {
+    private void setSecretWord() {
 
         int index = randInt(0, words.size() - 1);
         secretWord = words.get(index);
     }
 
-    private int getSecretWordLength() {
+    int getSecretWordLength() {
         return secretWord.length();
     }
 
-    String getSecretWord() {
+    public String getSecretWord() {
         return secretWord;
     }
 
-    String getNewGame() {
-        attemtsNumber = 10;
-        System.err.println(getSecretWord());
-        return "Я загадал слово из " + getSecretWordLength() + " букв.";
-    }
+
 
      String attempt(String quizz, String answer) {
         String attemptResult = "";

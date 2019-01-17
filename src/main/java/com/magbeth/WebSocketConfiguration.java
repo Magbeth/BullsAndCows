@@ -13,8 +13,6 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
     @Autowired
     private EventHandler eventHandler;
 
-    @Autowired
-    private App app;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
