@@ -25,7 +25,6 @@ import java.util.Set;
 public class EventHandler extends TextWebSocketHandler implements WebSocketHandler {
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(EventHandler.class);
 
-    private static Set<WebSocketSession> chatEndpoints = new HashSet<>();
     private Map<WebSocketSession, App> sessions= new HashMap();
 
 
@@ -33,7 +32,6 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         super.afterConnectionEstablished(session);
         System.out.println("Socket Connected: " + session);
-        chatEndpoints.add(session);
     }
 
     @Override
@@ -58,18 +56,20 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
     private TextMessage start(WebSocketSession session) {
         App app = new App();
         sessions.put(session, app);
-//        System.err.println("saved " + app.getSecretWord()+" for " + session);
+        log.info("saved " + app.getSecretWord()+" for " + session);
         return new TextMessage("Я загадал слово из " + app.getSecretWordLength() + " букв");
     }
 
     private TextMessage answer(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
         String quiz = sessions.get(session).getSecretWord();
-        System.err.println("get " + sessions.get(session).getSecretWord()+" for " + session);
-        TextMessage msg = new TextMessage("Попытка № "+(11 - sessions.get(session).getAttemtsNumber()) + "\n " + "Ваш ответ: " + ans + "\n " + sessions.get(session).attempt(quiz, ans) + "From "+ session);
+        log.info("get " + sessions.get(session).getSecretWord()+" for " + session);
+        TextMessage msg = new TextMessage("Попытка № "+(11 - sessions.get(session).getAttemtsNumber()) + "Ваш ответ: " + " " + ans + sessions.get(session).attempt(quiz, ans));
         return msg;
-
     }
+
+    //TODO: Вызов проверки после каждого ответа неэффективен - оптимизировать
+
     private void gameOverCheck(String payload, WebSocketSession session) {
         String ans = JsonHelper.getJsonNode(payload).get("data").get("msg").textValue();
         String quiz = sessions.get(session).getSecretWord();
@@ -81,24 +81,22 @@ public class EventHandler extends TextWebSocketHandler implements WebSocketHandl
             }
         }
     }
+
     private void broadcast(TextMessage message, WebSocketSession session) {
-
-//            synchronized (this.session) {
-                try {
-                    session.sendMessage(message);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-//            }
-
+        try {
+            session.sendMessage(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    //TODO: почитать про очистку данных вебсессии после ее закрытия
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        log.error("Socket Closed: [" + closeStatus.getCode() + "] " + closeStatus.getReason());
+        log.warn("Socket Closed: [" + closeStatus.getCode() + "] " + closeStatus.getReason());
         super.afterConnectionClosed(session, closeStatus);
         sessions.remove(session, sessions.get(session));
-        chatEndpoints.remove(session);
+        log.info(session + " session deleted");
     }
 }
 

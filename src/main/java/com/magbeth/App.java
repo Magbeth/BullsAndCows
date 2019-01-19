@@ -1,12 +1,16 @@
 package com.magbeth;
 
 
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class App{
+
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(EventHandler.class);
     private static List<String> words;
     private static final Random rand = new Random();
     private String secretWord;
@@ -23,7 +27,7 @@ public class App{
     public App() {
         setSecretWord();
         attemtsNumber = 10;
-        System.err.println(getSecretWord());
+        log.warn(getSecretWord());
     }
 
     public int getAttemtsNumber() {
@@ -46,12 +50,11 @@ public class App{
     }
 
     private void setSecretWord() {
-
         int index = randInt(0, words.size() - 1);
         secretWord = words.get(index);
     }
 
-    int getSecretWordLength() {
+    public int getSecretWordLength() {
         return secretWord.length();
     }
 

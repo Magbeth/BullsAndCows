@@ -13,7 +13,6 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
     @Autowired
     private EventHandler eventHandler;
 
-
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(eventHandler, "/game")
